@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LTV · DSR 계산기 — OK저축은행 모기지본부</title>
+<style>
+:root {
+  --ok: #FF6600;
+  --ok-light: #FF8533;
+  --ok-dim: rgba(255,102,0,0.08);
+  --ok-border: rgba(255,102,0,0.28);
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface2: #f8f9fb;
+  --border: #e4e8ef;
+  --border2: #cdd3df;
+  --text: #1a1f2e;
+  --text2: #5a6278;
+  --text3: #9aa0b4;
+  --green: #15803d;
+  --green-dim: #f0fdf4;
+  --green-b: #86efac;
+  --red: #dc2626;
+  --red-dim: #fef2f2;
+  --red-b: #fca5a5;
+  --yellow: #b45309;
+  --yellow-dim: #fffbeb;
+  --yellow-b: #fcd34d;
+  --blue: #1d4ed8;
+  --blue-dim: #eff6ff;
+  --blue-b: #93c5fd;
+  --r: 10px; --rsm: 6px; --rlg: 14px;
+  --sh: 0 1px 3px rgba(0,0,0,0.07),0 4px 14px rgba(0,0,0,0.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Apple SD Gothic Neo','맑은 고딕','Malgun Gothic','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+
+/* 헤더 */
+.hd{background:#fff;border-bottom:3px solid var(--ok);padding:0 1.5rem}
+.hd-in{max-width:960px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:13px 0}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mk{width:36px;height:36px;border-radius:8px;background:var(--ok);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;letter-spacing:-.02em}
+.logo-tx{font-size:15px;font-weight:700;color:var(--text)}.logo-tx span{color:var(--ok)}
+.hd-sub{font-size:12px;color:var(--text3)}
+
+/* 배너 */
+.banner{background:linear-gradient(135deg,var(--ok) 0%,#e85500 100%);padding:1.6rem 1.5rem;text-align:center}
+.banner-badge{display:inline-block;padding:3px 10px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);border-radius:20px;font-size:10px;font-weight:700;color:#fff;letter-spacing:.07em;margin-bottom:10px}
+.banner h1{font-size:clamp(1.25rem,3vw,1.75rem);font-weight:900;color:#fff;letter-spacing:-.02em;margin-bottom:5px}
+.banner p{font-size:13px;color:rgba(255,255,255,0.85)}
+
+/* 레이아웃 */
+.wrap{max-width:960px;margin:0 auto;padding:1.5rem 1.25rem}
+.lay{display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start}
+@media(max-width:740px){.lay{grid-template-columns:1fr}}
+
+/* 카드 */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--sh)}
+.ct{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;display:flex;align-items:center;gap:7px}
+.ct::after{content:'';flex:1;height:1px;background:var(--border)}
+.ct-ic{width:18px;height:18px;border-radius:4px;background:var(--ok-dim);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+
+/* 탭 */
+.tabs{display:flex;gap:6px;margin-bottom:1.25rem}
+.tab{flex:1;padding:9px;border:1.5px solid var(--border2);border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;background:var(--surface2);color:var(--text2);transition:all .18s;text-align:center;font-family:inherit}
+.tab:hover{border-color:var(--ok-border);color:var(--ok)}
+.tab.on{background:var(--ok-dim);border-color:var(--ok);color:var(--ok);font-weight:700}
+
+/* 그리드 */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:520px){.g2{grid-template-columns:1fr}}
+
+/* 폼 */
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:12px;font-weight:600;color:var(--text2)}
+.fld input,.fld select{height:38px;padding:0 11px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rsm);color:var(--text);font-size:14px;font-family:inherit;transition:border-color .18s,box-shadow .18s;outline:none;-webkit-appearance:none;appearance:none}
+.fld input[type=date]{font-size:13px}
+.fld input:focus,.fld select:focus{border-color:var(--ok);box-shadow:0 0 0 3px var(--ok-dim)}
+.fld select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239aa0b4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:28px}
+.iu{position:relative}.iu input{padding-right:36px}
+.iu .un{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text3);pointer-events:none}
+
+/* 필 */
+.pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{padding:5px 11px;border:1.5px solid var(--border2);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text2);background:var(--surface2);font-family:inherit;transition:all .15s}
+.pill:hover{border-color:var(--ok);color:var(--ok)}
+.pill.on{background:var(--ok-dim);border-color:var(--ok);color:var(--ok);font-weight:700}
+
+/* 체크 */
+.cks{display:flex;flex-direction:column;gap:3px}
+.ck{display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:8px;border-radius:var(--rsm);border:1.5px solid transparent;transition:all .15s}
+.ck:hover{background:var(--ok-dim);border-color:var(--ok-border)}
+.ck input[type=checkbox]{width:16px;height:16px;margin-top:1px;cursor:pointer;accent-color:var(--ok);flex-shrink:0}
+.ck-lb{font-size:13px;font-weight:500;color:var(--text)}
+.ck-dc{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* 구분선 */
+.sep{display:flex;align-items:center;gap:8px;margin:1rem 0 .75rem}
+.sep span{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);white-space:nowrap}
+.sep::before,.sep::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* 알림 */
+.al{border-radius:var(--rsm);padding:9px 12px;font-size:12px;line-height:1.6;margin-bottom:5px;display:flex;align-items:flex-start;gap:7px}
+.al-ok{background:var(--ok-dim);border:1px solid var(--ok-border);color:#c74e00}
+.al-info{background:var(--blue-dim);border:1px solid var(--blue-b);color:var(--blue)}
+.al-warn{background:var(--yellow-dim);border:1px solid var(--yellow-b);color:var(--yellow)}
+.al-danger{background:var(--red-dim);border:1px solid var(--red-b);color:var(--red)}
+.al-success{background:var(--green-dim);border:1px solid var(--green-b);color:var(--green)}
+
+/* 결과 */
+.res-panel{position:sticky;top:1.25rem}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.mc{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:.875rem}
+.mc.acc{background:var(--ok-dim);border-color:var(--ok-border)}
+.mc .ml{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:4px}
+.mc .mv{font-size:22px;font-weight:900;letter-spacing:-.03em;color:var(--text)}
+.mc.acc .mv{color:var(--ok)}
+.mc .ms{font-size:11px;color:var(--text3);margin-top:2px}
+
+.bdg{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.bdg-p{background:var(--green-dim);border:1px solid var(--green-b);color:var(--green)}
+.bdg-f{background:var(--red-dim);border:1px solid var(--red-b);color:var(--red)}
+.bdg-n{background:var(--surface2);border:1px solid var(--border2);color:var(--text3)}
+
+.rr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.rr:last-child{border-bottom:none}
+.rl{color:var(--text2)}.rv{font-weight:700;color:var(--text)}
+
+.fin{margin-top:1rem;padding:13px;border-radius:var(--r);text-align:center;font-size:15px;font-weight:900;letter-spacing:-.01em;transition:all .3s}
+.fin-p{background:var(--green-dim);border:2px solid var(--green-b);color:var(--green)}
+.fin-f{background:var(--red-dim);border:2px solid var(--red-b);color:var(--red)}
+
+.guide{font-size:12px;color:var(--text2);line-height:2.1}
+
+.ptag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em;margin-left:6px;background:var(--ok-dim);border:1px solid var(--ok-border);color:var(--ok)}
+
+.footer{text-align:center;padding:1.5rem;font-size:11px;color:var(--text3);border-top:1px solid var(--border);margin-top:.5rem}
+
+/* 역산 카드 */
+.rev-card{background:linear-gradient(135deg,#fff8f0,#fff);border:1.5px solid var(--ok-border)}
+.rev-input-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:1rem}
+.rev-input-row .fld{flex:1}
+.rev-input-row button{height:38px;padding:0 16px;border:none;border-radius:var(--rsm);background:var(--ok);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .18s}
+.rev-input-row button:hover{background:var(--ok-light)}
+.rev-result{display:none}
+.rev-result.show{display:block}
+.rev-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rsm);padding:12px;margin-bottom:8px}
+.rev-main{font-size:20px;font-weight:900;color:var(--ok);margin-bottom:4px}
+.rev-sub{font-size:12px;color:var(--text2);line-height:1.7}
+.rev-detail{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.rev-detail .rev-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:8px;text-align:center}
+.rev-detail .rev-item-label{font-size:10px;color:var(--text3);font-weight:600}
+.rev-detail .rev-item-value{font-size:14px;font-weight:800;color:var(--text);margin-top:2px}
+
+/* 상환계획표 */
+.sched-wrap{margin-top:1rem;display:none}
+.sched-wrap.show{display:block}
+.sched-btn{width:100%;padding:12px;border:2px solid var(--ok);border-radius:var(--r);background:var(--ok-dim);color:var(--ok);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s}
+.sched-btn:hover{background:var(--ok);color:#fff}
+.sched-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:1rem 0}
+.sched-summary .ss-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:10px;text-align:center}
+.sched-summary .ss-label{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:3px}
+.sched-summary .ss-value{font-size:16px;font-weight:800;color:var(--text)}
+.sched-table-wrap{max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rsm);margin-top:.75rem}
+.sched-table{width:100%;border-collapse:collapse;font-size:12px}
+.sched-table thead{position:sticky;top:0;z-index:1}
+.sched-table th{background:var(--ok);color:#fff;padding:8px 6px;font-weight:700;text-align:right;font-size:11px;white-space:nowrap}
+.sched-table th:first-child{text-align:center;width:50px}
+.sched-table td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+.sched-table td:first-child{text-align:center;color:var(--text2);font-weight:600}
+.sched-table tbody tr:hover{background:var(--ok-dim)}
+.sched-table tbody tr:nth-child(12n){border-bottom:2px solid var(--ok-border)}
+.sched-year-row td{background:var(--surface2);font-weight:700;color:var(--ok);border-bottom:2px solid var(--ok-border)}
+.sched-toggle{display:flex;gap:6px;margin-bottom:.75rem}
+.sched-toggle .pill{font-size:11px;padding:4px 10px}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div class="hd-in">
+    <div class="logo">
+      <div class="logo-mk">OK</div>
+      <div class="logo-tx"><span>OK</span>저축은행 모기지본부</div>
+    </div>
+    <div class="hd-sub">내부 업무용 · 심사 보조 도구</div>
+  </div>
+</div>
+
+<div class="banner">
+  <div class="banner-badge">MORTGAGE CALCULATOR</div>
+  <h1>LTV · DSR 계산기</h1>
+  <p>날짜 + 지역으로 규제 여부를 자동 판별하고 대책별 기준을 소급 적용합니다</p>
+</div>
+
+<div class="wrap">
+<div class="lay">
+
+<!-- 입력 -->
+<div>
+  <div class="tabs">
+    <div class="tab on">🏠 주택담보대출</div>
+  </div>
+
+  <div class="card">
+    <div class="ct"><span class="ct-ic">📅</span>계약·공고 기준일 및 지역<span class="ptag" id="pnb">-</span></div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="fld"><label>매매계약일 / 입주자 모집공고일</label><input type="date" id="cdate" value="2025-06-05" onchange="render()"></div>
+      <div class="fld"><label>시·도</label>
+        <select id="sido" onchange="onSido()">
+          <option value="seoul">서울특별시</option><option value="gyeonggi">경기도</option>
+          <option value="incheon">인천광역시</option><option value="other">그 외 지방</option>
+        </select>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="fld"><label id="sgl">구 선택</label><select id="sigungu" onchange="render()"></select></div>
+      <div class="fld"><label style="opacity:0">.</label><div id="rb" class="al al-ok" style="height:38px;margin:0;align-items:center"></div></div>
+    </div>
+    <div id="pb" class="al al-ok"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct"><span class="ct-ic">👤</span>기본 정보</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="fld"><label>연소득</label><div class="iu"><input type="number" id="income" value="60000" oninput="render()"><span class="un">만원</span></div></div>
+      <div class="fld"><label>기존 연간 원리금 상환액</label><div class="iu"><input type="number" id="existing" value="0" oninput="render()"><span class="un">만원</span></div></div>
+    </div>
+    <div class="g2">
+      <div class="fld"><label>대출 기간</label>
+        <select id="term" onchange="render()">
+          <option value="10">10년</option><option value="20">20년</option><option value="30" selected>30년</option><option value="40">40년</option>
+        </select>
+      </div>
+      <div class="fld"><label>주택 보유 현황</label>
+        <select id="hown" onchange="render()">
+          <option value="none">무주택</option><option value="one">1주택</option><option value="multi">다주택</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="mc">
+    <div class="ct"><span class="ct-ic">🏠</span>주택담보대출 정보</div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="fld"><label>담보 주택 가격</label><div class="iu"><input type="number" id="hprice" value="50000" oninput="render()"><span class="un">만원</span></div></div>
+      <div class="fld"><label>대출 희망 금액</label><div class="iu"><input type="number" id="lamt" value="30000" oninput="render()"><span class="un">만원</span></div></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="fld"><label>대출 금리</label><div class="iu"><input type="number" id="rate" value="4.5" step="0.1" oninput="render()"><span class="un">%</span></div></div>
+      <div class="fld"><label>금리 유형</label>
+        <div class="pills" id="rtg" style="margin-top:5px">
+          <div class="pill on" onclick="setRT('variable',this)">변동</div>
+          <div class="pill" onclick="setRT('mixed',this)">혼합형</div>
+          <div class="pill" onclick="setRT('cycle',this)">주기형</div>
+          <div class="pill" onclick="setRT('fixed',this)">순수고정</div>
+        </div>
+      </div>
+    </div>
+    <div id="fpw" style="display:none;margin-bottom:10px">
+      <div class="g2">
+        <div class="fld"><label id="fpl">고정기간 (년)</label>
+          <select id="fp" onchange="render()">
+            <option value="3">3년</option><option value="5" selected>5년</option><option value="7">7년</option>
+            <option value="10">10년</option><option value="15">15년</option><option value="20">20년</option>
+          </select>
+        </div>
+        <div class="fld"><label style="opacity:0">.</label><div id="fpi" style="font-size:12px;color:var(--text3);padding-top:10px"></div></div>
+      </div>
+    </div>
+    <div id="rti" class="al al-info"></div>
+
+    <div class="sep"><span>특례 / 예외 조건</span></div>
+    <div class="cks">
+      <label class="ck"><input type="checkbox" id="cb1" onchange="render()"><div><div class="ck-lb">생애최초 주택 구입</div><div class="ck-dc">LTV 우대 적용 (6.27 이후 수도권 80%→70%)</div></div></label>
+      <label class="ck"><input type="checkbox" id="cb2" onchange="render()"><div><div class="ck-lb">신혼부부</div><div class="ck-dc">결혼 7년 이내, 무주택 세대주</div></div></label>
+      <label class="ck"><input type="checkbox" id="cb3" onchange="render()"><div><div class="ck-lb">청약 당첨 (집단대출)</div><div class="ck-dc">입주자 공고일 기준으로 소급 적용</div></div></label>
+      <label class="ck"><input type="checkbox" id="cb4" onchange="render()"><div><div class="ck-lb">정책모기지 (디딤돌 / 보금자리론)</div><div class="ck-dc">별도 기준 적용 — 소득·주택가격 요건 확인 필요</div></div></label>
+    </div>
+    <div id="spi" style="margin-top:6px"></div>
+  </div>
+
+</div>
+
+<!-- 결과 -->
+<div class="res-panel">
+  <div class="card">
+    <div class="ct"><span class="ct-ic">📊</span>계산 결과</div>
+    <div id="ala" style="margin-bottom:.5rem"></div>
+    <div class="mg">
+      <div class="mc acc"><div class="ml">LTV</div><div class="mv" id="rltv">-</div><div class="ms" id="rltv2">-</div></div>
+      <div class="mc acc"><div class="ml">DSR (스트레스 적용)</div><div class="mv" id="rdsr">-</div><div class="ms" id="rdsr2">-</div></div>
+      <div class="mc"><div class="ml">신규 연간 원리금</div><div class="mv" id="rpmt">-</div><div class="ms">스트레스 금리 적용</div></div>
+      <div class="mc"><div class="ml">스트레스 가산금리</div><div class="mv" id="rsr">-</div><div class="ms" id="rsr2">-</div></div>
+    </div>
+    <div class="rr"><span class="rl">LTV 판정</span><span id="jltv">-</span></div>
+    <div class="rr"><span class="rl">DSR 판정</span><span id="jdsr">-</span></div>
+    <div class="rr"><span class="rl">최대 대출 (LTV 기준)</span><span class="rv" id="jml">-</span></div>
+    <div class="rr"><span class="rl">최대 대출 (DSR 기준)</span><span class="rv" id="jmd">-</span></div>
+    <div class="fin fin-f" id="fin">-</div>
+    <div class="sched-wrap" id="schedWrap">
+      <button class="sched-btn" id="schedBtn" onclick="toggleSchedule()">📅 상환계획표 보기</button>
+      <div id="schedContent" style="display:none">
+        <div class="sched-summary" id="schedSummary"></div>
+        <div class="sched-toggle">
+          <div class="pill on" onclick="setSchedView('monthly',this)">월별</div>
+          <div class="pill" onclick="setSchedView('yearly',this)">연별</div>
+        </div>
+        <div class="sched-table-wrap">
+          <table class="sched-table">
+            <thead id="schedHead"></thead>
+            <tbody id="schedBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card rev-card">
+    <div class="ct"><span class="ct-ic">🔄</span>역산 — 필요 소득 계산</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">원하는 대출금액을 입력하면 DSR을 통과하기 위한 <b>최소 연소득</b>을 알려드립니다</p>
+    <div class="rev-input-row">
+      <div class="fld"><label>희망 대출금액</label><div class="iu"><input type="number" id="revAmt" value="" placeholder="예: 30000" oninput="calcReverse()"><span class="un">만원</span></div></div>
+      <button onclick="calcReverse()">계산</button>
+    </div>
+    <div class="rev-result" id="revResult">
+      <div class="rev-box">
+        <div class="rev-main" id="revIncome">-</div>
+        <div class="rev-sub" id="revDesc">-</div>
+      </div>
+      <div class="rev-detail">
+        <div class="rev-item"><div class="rev-item-label">연간 원리금 상환액</div><div class="rev-item-value" id="revPmt">-</div></div>
+        <div class="rev-item"><div class="rev-item-label">DSR 한도</div><div class="rev-item-value" id="revDsr">-</div></div>
+        <div class="rev-item"><div class="rev-item-label">기존 상환액</div><div class="rev-item-value" id="revExist">-</div></div>
+        <div class="rev-item"><div class="rev-item-label">적용 금리 (스트레스)</div><div class="rev-item-value" id="revRate">-</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct"><span class="ct-ic">📋</span>적용 기준 상세</div>
+    <div class="guide" id="gd"></div>
+  </div>
+  <div class="footer">본 계산기는 심사 보조 목적으로 제공되며<br>실제 대출 가능 여부는 별도 심사 기준에 따릅니다</div>
+</div>
+
+</div>
+</div>
+
+<script>
+let rateType='variable';
+const SG={
+  seoul:['강남구','강동구','강북구','강서구','관악구','광진구','구로구','금천구','노원구','도봉구','동대문구','동작구','마포구','서대문구','서초구','성동구','성북구','송파구','양천구','영등포구','용산구','은평구','종로구','중구','중랑구'],
+  gyeonggi:['과천시','광명시','광주시','구리시','군포시','김포시','남양주시','부천시','성남시 분당구','성남시 수정구','성남시 중원구','수원시 영통구','수원시 장안구','수원시 팔달구','수원시 권선구','시흥시','안산시','안양시 동안구','안양시 만안구','양주시','여주시','오산시','용인시 수지구','용인시 기흥구','용인시 처인구','의왕시','의정부시','이천시','파주시','평택시','포천시','하남시','화성시','고양시'],
+  incheon:['계양구','남동구','동구','미추홀구','부평구','서구','연수구','중구','강화군','옹진군'],
+  other:['해당없음(지방)']
+};
+function getReg(d,sido,sg){
+  const dt=new Date(d);
+  if(sido==='other') return 'province';
+  if(sido==='incheon') return 'metro';
+  if(sido==='gyeonggi'){
+    const r=['과천시','광명시','성남시 분당구','성남시 수정구','성남시 중원구','수원시 영통구','수원시 장안구','수원시 팔달구','안양시 동안구','용인시 수지구','의왕시','하남시'];
+    return (dt>=new Date('2025-10-16')&&r.includes(sg))?'regulated':'metro';
+  }
+  if(sido==='seoul'){
+    if(dt<new Date('2025-06-28')) return ['강남구','서초구','송파구','용산구'].includes(sg)?'regulated':'metro';
+    return 'regulated';
+  }
+  return 'metro';
+}
+function getSB(d,reg){
+  const dt=new Date(d);
+  if(dt<new Date('2024-02-26')) return 0;
+  if(dt<new Date('2024-09-01')) return reg==='province'?0:0.38;
+  if(dt<new Date('2025-07-01')) return reg==='regulated'?1.20:0.75;
+  if(dt<new Date('2025-10-16')) return reg==='province'?0.75:1.50;
+  if(reg==='regulated') return 3.00;
+  if(reg==='metro') return 1.50;
+  return 0.75;
+}
+function getLTV(d,reg,h){
+  const dt=new Date(d),is627=dt>=new Date('2025-06-28'),is1015=dt>=new Date('2025-10-16');
+  if(reg==='province'){if(h==='none')return 80;if(h==='one')return 70;return is627?0:60;}
+  if(reg==='metro'){if(h==='none')return 70;if(h==='one')return 60;return is627?0:50;}
+  if(is1015){return h==='none'?40:0;}
+  if(h==='none')return 50;if(h==='one')return is627?0:40;return is627?0:30;
+}
+function getFL(d,reg){
+  const is627=new Date(d)>=new Date('2025-06-28');
+  if(reg==='province')return 80;return is627?70:(reg==='regulated'?70:80);
+}
+function getPol(d){
+  const dt=new Date(d);
+  if(dt<new Date('2024-02-26'))return 'DSR 시행 전';
+  if(dt<new Date('2024-09-01'))return '스트레스DSR 1단계';
+  if(dt<new Date('2025-06-28'))return '스트레스DSR 2단계';
+  if(dt<new Date('2025-07-01'))return '6·27 대책';
+  if(dt<new Date('2025-10-16'))return '스트레스DSR 3단계';
+  return '10·15 대책';
+}
+function setRT(t,el){
+  rateType=t;document.querySelectorAll('#rtg .pill').forEach(e=>e.classList.remove('on'));el.classList.add('on');
+  document.getElementById('fpw').style.display=(t==='mixed'||t==='cycle')?'':'none';
+  document.getElementById('fpl').textContent=t==='mixed'?'고정기간 (년)':'금리변동주기 (년)';render();
+}
+function onSido(){
+  const s=document.getElementById('sido').value;
+  document.getElementById('sigungu').innerHTML=SG[s].map(x=>`<option value="${x}">${x}</option>`).join('');
+  document.getElementById('sgl').textContent=s==='gyeonggi'?'시·구 선택':s==='other'?'지역':'구 선택';render();
+}
+function pmt(p,ar,y){const r=ar/100/12,n=y*12;if(r===0)return p/n*12;return p*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1)*12;}
+function mxL(ap,ar,y){const r=ar/100/12,n=y*12,m=ap/12;if(r===0)return m*n;return m*(Math.pow(1+r,n)-1)/(r*Math.pow(1+r,n));}
+function getAd(base){
+  const term=parseInt(document.getElementById('term').value)||30,fp=parseInt(document.getElementById('fp').value)||5;
+  if(rateType==='fixed')return{a:0,l:'순수고정 → 스트레스 금리 0%',r:0};
+  let ratio=1,label='변동금리 → 100% 적용';
+  if(rateType==='mixed'){
+    const p=fp/term;
+    if(fp<5){ratio=1;label='고정기간 5년 미만 → 100%';}
+    else if(p<0.3){ratio=0.8;label=`혼합형 ${(p*100).toFixed(0)}% → 80%`;}
+    else if(p<0.5){ratio=0.6;label=`혼합형 ${(p*100).toFixed(0)}% → 60%`;}
+    else if(p<0.7){ratio=0.4;label=`혼합형 ${(p*100).toFixed(0)}% → 40%`;}
+    else{ratio=0.2;label=`혼합형 ${(p*100).toFixed(0)}% → 20%`;}
+  } else if(rateType==='cycle'){
+    const p=fp/term;
+    if(fp<5){ratio=1;label='주기 5년 미만 → 100%';}
+    else if(p<0.3){ratio=0.3;label=`주기형 ${(p*100).toFixed(0)}% → 30%`;}
+    else if(p<0.5){ratio=0.2;label=`주기형 ${(p*100).toFixed(0)}% → 20%`;}
+    else{ratio=0.1;label=`주기형 ${(p*100).toFixed(0)}% → 10%`;}
+  }
+  return{a:base*ratio,l:label,r:ratio};
+}
+function bdg(t,tx){return`<span class="bdg bdg-${t}">${tx}</span>`;}
+function render(){
+  const d=document.getElementById('cdate').value;if(!d)return;
+  const sido=document.getElementById('sido').value,sg=document.getElementById('sigungu').value||'';
+  const income=parseFloat(document.getElementById('income').value)||0;
+  const existing=parseFloat(document.getElementById('existing').value)||0;
+  const term=parseInt(document.getElementById('term').value)||30;
+  const hown=document.getElementById('hown').value;
+  const reg=getReg(d,sido,sg),sb=getSB(d,reg),dsrL=reg==='province'?50:40,pn=getPol(d);
+  const rL={regulated:'규제지역',metro:'수도권 비규제',province:'지방'};
+  document.getElementById('pnb').textContent=pn;
+  const rb=document.getElementById('rb');rb.className='al al-ok';rb.style.cssText='height:38px;margin:0;display:flex;align-items:center;';rb.textContent=`${sg||sido} → ${rL[reg]}`;
+  const pb=document.getElementById('pb');pb.className='al al-ok';pb.textContent=`적용 대책: ${pn}  ·  스트레스 기준금리: ${sb}%`;
+
+  {
+    const hp=parseFloat(document.getElementById('hprice').value)||0;
+    const la=parseFloat(document.getElementById('lamt').value)||0;
+    const br=parseFloat(document.getElementById('rate').value)||0;
+    const f1=document.getElementById('cb1').checked,f2=document.getElementById('cb2').checked;
+    const f3=document.getElementById('cb3').checked,f4=document.getElementById('cb4').checked;
+    const{a:addon,l:albl,r:ratio}=getAd(sb);
+    if(rateType==='mixed'||rateType==='cycle'){
+      const fp=parseInt(document.getElementById('fp').value)||5;
+      document.getElementById('fpi').textContent=`만기 대비 ${(fp/term*100).toFixed(0)}% 비중 → 스트레스 ${(ratio*100).toFixed(0)}%`;
+    }
+    document.getElementById('rti').textContent={variable:'변동금리: 스트레스 금리 100% 적용',mixed:'혼합형: 고정기간 비중에 따라 차등 적용',cycle:'주기형: 금리변동주기 비중에 따라 차등 적용 (혼합형보다 완화)',fixed:'순수고정금리: 스트레스 금리 미적용 (0%)'}[rateType];
+    let ltvL=getLTV(d,reg,hown),ltvN='일반 기준';
+    const imp=ltvL===0;
+    if(!imp){
+      if(f4){ltvL=reg==='province'?80:70;ltvN='정책모기지 기준';}
+      else if(f1){ltvL=getFL(d,reg);ltvN=`생애최초 ${ltvL}%`;}
+      else if(f2&&hown==='none'){const nl=reg==='province'?80:reg==='regulated'?60:70;ltvL=nl;ltvN=`신혼부부 우대 ${nl}%`;}
+    }
+    const sr=br+addon;
+    const ltvP=hp>0?la/hp*100:0,ap=pmt(la*10000,sr,term)/10000;
+    const tdsr=income>0?(ap+existing)/income*100:0;
+    const mltv=hp*ltvL/100,mdp=Math.max(0,income*dsrL/100-existing),mdl=mxL(mdp*10000,sr,term)/10000;
+    document.getElementById('rltv').textContent=ltvP.toFixed(1)+'%';
+    document.getElementById('rltv2').textContent=`한도 ${ltvL}% (${ltvN})`;
+    document.getElementById('rdsr').textContent=tdsr.toFixed(1)+'%';
+    document.getElementById('rdsr2').textContent=`한도 ${dsrL}%`;
+    document.getElementById('rpmt').textContent=Math.round(ap).toLocaleString()+'만원';
+    document.getElementById('rsr').textContent=addon.toFixed(2)+'%';
+    document.getElementById('rsr2').textContent=albl;
+    document.getElementById('jml').textContent=imp?'대출불가':Math.round(mltv).toLocaleString()+'만원';
+    document.getElementById('jmd').textContent=Math.round(mdl).toLocaleString()+'만원';
+    const lp=!imp&&ltvP<=ltvL,dp=tdsr<=dsrL;
+    document.getElementById('jltv').innerHTML=imp?bdg('f','불가'):lp?bdg('p','통과'):bdg('f','초과');
+    document.getElementById('jdsr').innerHTML=dp?bdg('p','통과'):bdg('f','초과');
+    const fb=document.getElementById('fin');
+    fb.className=(!imp&&lp&&dp)?'fin fin-p':'fin fin-f';
+    fb.textContent=(!imp&&lp&&dp)?'✓ 대출 가능':'✗ 조건 미충족';
+    const als=[];
+    if(reg==='regulated'&&new Date(d)>=new Date('2025-10-16'))als.push({c:'al-danger',t:'10·15 대책: 규제지역 무주택 LTV 40% / 스트레스 금리 하한 3.0%'});
+    if(imp)als.push({c:'al-danger',t:'6·27 대책 이후 수도권·규제지역 다주택자 / 처분조건 미충족 1주택자 주담대 불가'});
+    if(reg==='regulated'&&new Date(d)>=new Date('2025-06-28')&&sido==='seoul'&&!['강남구','서초구','송파구','용산구'].includes(sg))
+      als.push({c:'al-warn',t:`${sg}: 6·27 대책(2025.6.28)부터 규제지역 신규 지정`});
+    document.getElementById('ala').innerHTML=als.map(a=>`<div class="al ${a.c}">${a.t}</div>`).join('');
+    const sms=[];
+    if(f1)sms.push(`생애최초 LTV ${getFL(d,reg)}% 적용`);
+    if(f2)sms.push('신혼부부 LTV 우대 적용 (무주택 세대주 요건)');
+    if(f3)sms.push(`청약당첨 소급: 공고일(${d}) 기준 → ${pn} 적용`);
+    if(f4)sms.push('정책모기지: 디딤돌(주택 5억·소득 7천만원↓) / 보금자리론(주택 6억↓) 별도 기준');
+    document.getElementById('spi').innerHTML=sms.map(m=>`<div class="al al-success" style="margin-top:5px">${m}</div>`).join('');
+    updateScheduleVisibility(!imp&&lp&&dp,la*10000,br,term);
+    document.getElementById('gd').innerHTML=[
+      `📍 ${sg||sido} (${rL[reg]}) · ${pn}`,
+      `LTV 한도: 무주택 ${getLTV(d,reg,'none')}% · 1주택 ${getLTV(d,reg,'one')||'불가'}% · 다주택 ${getLTV(d,reg,'multi')||'불가'}%`,
+      `생애최초 LTV: ${getFL(d,reg)}%`,
+      `DSR 한도: ${dsrL}% · 스트레스 기준금리: ${sb}%`,
+      new Date(d)>=new Date('2025-06-28')?`6·27: 수도권 주담대 한도 6억 상한 · 다주택 불가 · 6개월 내 전입 의무`:null
+    ].filter(Boolean).join('<br>');
+  }
+}
+function calcReverse(){
+  const revAmt=parseFloat(document.getElementById('revAmt').value)||0;
+  const resEl=document.getElementById('revResult');
+  if(revAmt<=0){resEl.classList.remove('show');return;}
+  const d=document.getElementById('cdate').value;if(!d)return;
+  const sido=document.getElementById('sido').value,sg=document.getElementById('sigungu').value||'';
+  const existing=parseFloat(document.getElementById('existing').value)||0;
+  const term=parseInt(document.getElementById('term').value)||30;
+  const br=parseFloat(document.getElementById('rate').value)||0;
+  const reg=getReg(d,sido,sg),sb=getSB(d,reg),dsrL=reg==='province'?50:40;
+  const{a:addon}=getAd(sb);
+  const sr=br+addon;
+  const annualPmt=pmt(revAmt*10000,sr,term)/10000;
+  const reqIncome=Math.ceil((annualPmt+existing)/(dsrL/100));
+  resEl.classList.add('show');
+  document.getElementById('revIncome').textContent=`최소 연소득: ${reqIncome.toLocaleString()}만원`;
+  document.getElementById('revDesc').innerHTML=`희망 대출 ${revAmt.toLocaleString()}만원 · ${term}년 상환 기준<br>DSR ${dsrL}% 이내 충족을 위한 최소 소득`;
+  document.getElementById('revPmt').textContent=Math.round(annualPmt).toLocaleString()+'만원';
+  document.getElementById('revDsr').textContent=dsrL+'%';
+  document.getElementById('revExist').textContent=existing.toLocaleString()+'만원';
+  document.getElementById('revRate').textContent=sr.toFixed(2)+'%';
+}
+let schedView='monthly',schedOpen=false,schedData=null;
+function toggleSchedule(){
+  schedOpen=!schedOpen;
+  document.getElementById('schedContent').style.display=schedOpen?'':'none';
+  document.getElementById('schedBtn').textContent=schedOpen?'📅 상환계획표 접기':'📅 상환계획표 보기';
+  if(schedOpen&&schedData)renderSchedule();
+}
+function setSchedView(v,el){
+  schedView=v;
+  document.querySelectorAll('.sched-toggle .pill').forEach(e=>e.classList.remove('on'));
+  el.classList.add('on');
+  renderSchedule();
+}
+function buildSchedule(principal,annualRate,years){
+  const r=annualRate/100/12,n=years*12;
+  const monthlyPmt=r===0?principal/n:principal*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  let balance=principal;
+  const rows=[];
+  let totalInterest=0,totalPrincipal=0;
+  for(let i=1;i<=n;i++){
+    const interest=balance*r;
+    const prinPay=monthlyPmt-interest;
+    balance=Math.max(0,balance-prinPay);
+    totalInterest+=interest;
+    totalPrincipal+=prinPay;
+    rows.push({month:i,payment:monthlyPmt,principal:prinPay,interest:interest,balance:balance});
+  }
+  return{rows,monthlyPmt,totalInterest,totalPrincipal,totalPayment:totalInterest+totalPrincipal};
+}
+function renderSchedule(){
+  if(!schedData)return;
+  const{rows,monthlyPmt,totalInterest,totalPayment}=schedData;
+  const fmt=v=>Math.round(v).toLocaleString();
+  document.getElementById('schedSummary').innerHTML=
+    `<div class="ss-item"><div class="ss-label">월 상환액</div><div class="ss-value">${fmt(monthlyPmt)}원</div></div>`+
+    `<div class="ss-item"><div class="ss-label">총 이자</div><div class="ss-value">${fmt(totalInterest)}원</div></div>`+
+    `<div class="ss-item"><div class="ss-label">총 상환액</div><div class="ss-value">${fmt(totalPayment)}원</div></div>`;
+  const head=document.getElementById('schedHead');
+  const body=document.getElementById('schedBody');
+  if(schedView==='monthly'){
+    head.innerHTML='<tr><th>회차</th><th>월상환금</th><th>원금</th><th>이자</th><th>잔금</th></tr>';
+    body.innerHTML=rows.map(r=>
+      `<tr><td>${r.month}</td><td>${fmt(r.payment)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.balance)}</td></tr>`
+    ).join('');
+  } else {
+    head.innerHTML='<tr><th>년차</th><th>연상환금</th><th>원금합계</th><th>이자합계</th><th>잔금</th></tr>';
+    const yearly=[];
+    for(let i=0;i<rows.length;i+=12){
+      const chunk=rows.slice(i,i+12);
+      const yPmt=chunk.reduce((s,r)=>s+r.payment,0);
+      const yPrin=chunk.reduce((s,r)=>s+r.principal,0);
+      const yInt=chunk.reduce((s,r)=>s+r.interest,0);
+      const yBal=chunk[chunk.length-1].balance;
+      yearly.push({year:Math.floor(i/12)+1,payment:yPmt,principal:yPrin,interest:yInt,balance:yBal});
+    }
+    body.innerHTML=yearly.map(r=>
+      `<tr><td>${r.year}년</td><td>${fmt(r.payment)}</td><td>${fmt(r.principal)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.balance)}</td></tr>`
+    ).join('');
+  }
+}
+function updateScheduleVisibility(pass,loanAmt,rate,termYears){
+  const wrap=document.getElementById('schedWrap');
+  if(pass&&loanAmt>0){
+    wrap.classList.add('show');
+    schedData=buildSchedule(loanAmt,rate,termYears);
+    if(schedOpen)renderSchedule();
+  } else {
+    wrap.classList.remove('show');
+    schedOpen=false;
+    document.getElementById('schedContent').style.display='none';
+    document.getElementById('schedBtn').textContent='📅 상환계획표 보기';
+  }
+}
+onSido();
+</script>
+</body>
+</html>
