@@ -229,6 +229,11 @@ body{font-family:'Apple SD Gothic Neo','맑은 고딕','Malgun Gothic','Noto San
       <div class="fld"><label>연소득</label><div class="iu"><input type="number" id="income" value="60000" oninput="render()"><span class="un">만원</span></div></div>
       <div class="fld"><label>기존 연간 원리금 상환액</label><div class="iu"><input type="number" id="existing" value="0" oninput="render()"><span class="un">만원</span></div></div>
     </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div class="fld"><label>한도대출 (마이너스통장) 한도</label><div class="iu"><input type="number" id="creditLine" value="0" oninput="render()"><span class="un">만원</span></div></div>
+      <div class="fld"><label>한도대출 금리</label><div class="iu"><input type="number" id="creditRate" value="4.5" step="0.1" oninput="render()"><span class="un">%</span></div></div>
+    </div>
+    <div id="creditInfo" class="al al-info" style="display:none"></div>
     <div class="g2">
       <div class="fld"><label>대출 기간</label>
         <select id="term" onchange="render()">
@@ -374,7 +379,7 @@ function getSB(d,reg){
   const dt=new Date(d);
   if(dt<new Date('2024-02-26')) return 0;
   if(dt<new Date('2024-09-01')) return reg==='province'?0:0.38;
-  if(dt<new Date('2025-07-01')) return reg==='regulated'?1.20:0.75;
+  if(dt<new Date('2025-07-01')) return reg==='province'?0.75:1.20;
   if(dt<new Date('2025-10-16')) return reg==='province'?0.75:1.50;
   if(reg==='regulated') return 3.00;
   if(reg==='metro') return 1.50;
@@ -437,7 +442,14 @@ function render(){
   const d=document.getElementById('cdate').value;if(!d)return;
   const sido=document.getElementById('sido').value,sg=document.getElementById('sigungu').value||'';
   const income=parseFloat(document.getElementById('income').value)||0;
-  const existing=parseFloat(document.getElementById('existing').value)||0;
+  const existingBase=parseFloat(document.getElementById('existing').value)||0;
+  const clAmt=parseFloat(document.getElementById('creditLine').value)||0;
+  const clRate=parseFloat(document.getElementById('creditRate').value)||0;
+  const clAnnual=clAmt>0?pmt(clAmt*10000,clRate,10)/10000:0;
+  const existing=existingBase+clAnnual;
+  const ciEl=document.getElementById('creditInfo');
+  if(clAmt>0){ciEl.style.display='';ciEl.textContent=`한도대출 DSR 환산: ${clAmt.toLocaleString()}만원 × ${clRate}% (10년 균등상환) → 연 ${Math.round(clAnnual).toLocaleString()}만원`;}
+  else{ciEl.style.display='none';}
   const term=parseInt(document.getElementById('term').value)||30;
   const hown=document.getElementById('hown').value;
   const reg=getReg(d,sido,sg),sb=getSB(d,reg),dsrL=reg==='province'?50:40,pn=getPol(d);
@@ -466,11 +478,22 @@ function render(){
       else if(f2&&hown==='none'){const nl=reg==='province'?80:reg==='regulated'?60:70;ltvL=nl;ltvN=`신혼부부 우대 ${nl}%`;}
     }
     const sr=br+addon;
+    const is627=new Date(d)>=new Date('2025-06-28'),is1015=new Date(d)>=new Date('2025-10-16');
+    let loanCap=Infinity,capLabel='';
+    if(is627&&reg!=='province'){
+      if(is1015&&reg==='regulated'){
+        if(hp>250000){loanCap=20000;capLabel='25억 초과 → 2억 상한';}
+        else if(hp>150000){loanCap=40000;capLabel='15억 초과 → 4억 상한';}
+        else{loanCap=60000;capLabel='15억 이하 → 6억 상한';}
+      } else {loanCap=60000;capLabel='6억 상한';}
+    }
     const ltvP=hp>0?la/hp*100:0,ap=pmt(la*10000,sr,term)/10000;
     const tdsr=income>0?(ap+existing)/income*100:0;
-    const mltv=hp*ltvL/100,mdp=Math.max(0,income*dsrL/100-existing),mdl=mxL(mdp*10000,sr,term)/10000;
+    let mltv=hp*ltvL/100,mdp=Math.max(0,income*dsrL/100-existing),mdl=mxL(mdp*10000,sr,term)/10000;
+    if(loanCap<Infinity){mltv=Math.min(mltv,loanCap);mdl=Math.min(mdl,loanCap);}
+    const capOver=loanCap<Infinity&&la>loanCap;
     document.getElementById('rltv').textContent=ltvP.toFixed(1)+'%';
-    document.getElementById('rltv2').textContent=`한도 ${ltvL}% (${ltvN})`;
+    document.getElementById('rltv2').textContent=`한도 ${ltvL}% (${ltvN})${capLabel?' · '+capLabel:''}`;
     document.getElementById('rdsr').textContent=tdsr.toFixed(1)+'%';
     document.getElementById('rdsr2').textContent=`한도 ${dsrL}%`;
     document.getElementById('rpmt').textContent=Math.round(ap).toLocaleString()+'만원';
@@ -478,7 +501,7 @@ function render(){
     document.getElementById('rsr2').textContent=albl;
     document.getElementById('jml').textContent=imp?'대출불가':Math.round(mltv).toLocaleString()+'만원';
     document.getElementById('jmd').textContent=Math.round(mdl).toLocaleString()+'만원';
-    const lp=!imp&&ltvP<=ltvL,dp=tdsr<=dsrL;
+    const lp=!imp&&ltvP<=ltvL&&!capOver,dp=tdsr<=dsrL;
     document.getElementById('jltv').innerHTML=imp?bdg('f','불가'):lp?bdg('p','통과'):bdg('f','초과');
     document.getElementById('jdsr').innerHTML=dp?bdg('p','통과'):bdg('f','초과');
     const fb=document.getElementById('fin');
@@ -487,6 +510,7 @@ function render(){
     const als=[];
     if(reg==='regulated'&&new Date(d)>=new Date('2025-10-16'))als.push({c:'al-danger',t:'10·15 대책: 규제지역 무주택 LTV 40% / 스트레스 금리 하한 3.0%'});
     if(imp)als.push({c:'al-danger',t:'6·27 대책 이후 수도권·규제지역 다주택자 / 처분조건 미충족 1주택자 주담대 불가'});
+    if(capOver)als.push({c:'al-danger',t:`주담대 ${capLabel} 초과 (희망 ${la.toLocaleString()}만원 → 최대 ${loanCap.toLocaleString()}만원)`});
     if(reg==='regulated'&&new Date(d)>=new Date('2025-06-28')&&sido==='seoul'&&!['강남구','서초구','송파구','용산구'].includes(sg))
       als.push({c:'al-warn',t:`${sg}: 6·27 대책(2025.6.28)부터 규제지역 신규 지정`});
     document.getElementById('ala').innerHTML=als.map(a=>`<div class="al ${a.c}">${a.t}</div>`).join('');
@@ -502,7 +526,8 @@ function render(){
       `LTV 한도: 무주택 ${getLTV(d,reg,'none')}% · 1주택 ${getLTV(d,reg,'one')||'불가'}% · 다주택 ${getLTV(d,reg,'multi')||'불가'}%`,
       `생애최초 LTV: ${getFL(d,reg)}%`,
       `DSR 한도: ${dsrL}% · 스트레스 기준금리: ${sb}%`,
-      new Date(d)>=new Date('2025-06-28')?`6·27: 수도권 주담대 한도 6억 상한 · 다주택 불가 · 6개월 내 전입 의무`:null
+      is1015&&reg==='regulated'?`10·15: 주담대 상한 15억↓ 6억 / 15~25억 4억 / 25억↑ 2억 · 스트레스 하한 3.0%`:
+      is627?`6·27: 수도권 주담대 한도 6억 상한 · 다주택 불가 · 6개월 내 전입 의무`:null
     ].filter(Boolean).join('<br>');
   }
 }
@@ -512,7 +537,11 @@ function calcReverse(){
   if(revAmt<=0){resEl.classList.remove('show');return;}
   const d=document.getElementById('cdate').value;if(!d)return;
   const sido=document.getElementById('sido').value,sg=document.getElementById('sigungu').value||'';
-  const existing=parseFloat(document.getElementById('existing').value)||0;
+  const existingBase=parseFloat(document.getElementById('existing').value)||0;
+  const clAmt=parseFloat(document.getElementById('creditLine').value)||0;
+  const clRate=parseFloat(document.getElementById('creditRate').value)||0;
+  const clAnnual=clAmt>0?pmt(clAmt*10000,clRate,10)/10000:0;
+  const existing=existingBase+clAnnual;
   const term=parseInt(document.getElementById('term').value)||30;
   const br=parseFloat(document.getElementById('rate').value)||0;
   const reg=getReg(d,sido,sg),sb=getSB(d,reg),dsrL=reg==='province'?50:40;
